@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, Float, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, Integer, Float, DateTime, Enum, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -58,5 +58,6 @@ class RouteStop(Base):
     lon = Column(Float, nullable=False)
     eta = Column(DateTime, nullable=True)
     stop_type = Column(Enum(StopType), nullable=False)
+    completed = Column(Boolean, default=False, nullable=False)
 
     route = relationship('Route', back_populates='stops')
