@@ -5,6 +5,7 @@ from typing import List
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 
 from db import get_session
@@ -16,11 +17,12 @@ app = FastAPI()
 websockets: List[WebSocket] = []
 
 async def broadcast_routes(session: AsyncSession):
-    result = await session.execute(select(Route))
+    result = await session.execute(
+        select(Route).options(selectinload(Route.stops))
+    )
     routes = result.scalars().all()
     data = []
     for route in routes:
-        await session.refresh(route)
         data.append({
             'id': route.id,
             'truck_id': route.truck_id,
@@ -143,11 +145,12 @@ async def request_pickup(r: StoreRequestIn, session: AsyncSession = Depends(get_
 
 @app.get("/routes")
 async def get_routes(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Route))
+    result = await session.execute(
+        select(Route).options(selectinload(Route.stops))
+    )
     routes = result.scalars().all()
     data = []
     for route in routes:
-        await session.refresh(route)
         data.append({
             'id': route.id,
             'truck_id': route.truck_id,
