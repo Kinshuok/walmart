@@ -29,7 +29,8 @@ async def broadcast_routes(session: AsyncSession):
                     'lat': stop.lat,
                     'lon': stop.lon,
                     'eta': stop.eta,
-                    'stop_type': stop.stop_type.value
+                    'stop_type': stop.stop_type.value,
+                    'completed': stop.completed
                 } for stop in route.stops
             ]
         })
@@ -156,11 +157,47 @@ async def get_routes(session: AsyncSession = Depends(get_session)):
                     'lat': s.lat,
                     'lon': s.lon,
                     'eta': s.eta,
-                    'stop_type': s.stop_type.value
+                    'stop_type': s.stop_type.value,
+                    'completed': s.completed
                 } for s in route.stops
             ]
         })
     return data
+
+@app.get("/routes/{truck_id}")
+async def get_latest_route(truck_id: int, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(
+        select(Route).where(Route.truck_id == truck_id).order_by(Route.id.desc())
+    )
+    route = result.scalars().first()
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+    await session.refresh(route)
+    return {
+        'id': route.id,
+        'truck_id': route.truck_id,
+        'stops': [
+            {
+                'lat': s.lat,
+                'lon': s.lon,
+                'eta': s.eta,
+                'stop_type': s.stop_type.value,
+                'completed': s.completed
+            } for s in route.stops
+        ]
+    }
+
+@app.post("/complete-stop/{stop_id}")
+async def complete_stop(stop_id: int, session: AsyncSession = Depends(get_session)):
+    stop = await session.get(RouteStop, stop_id)
+    if not stop:
+        raise HTTPException(status_code=404, detail="Stop not found")
+    if stop.completed:
+        return {"status": "already completed"}
+    stop.completed = True
+    await session.commit()
+    await broadcast_routes(session)
+    return {"status": "completed"}
 
 @app.post("/gps-ping")
 async def gps_ping(ping: GPSPing, session: AsyncSession = Depends(get_session)):
