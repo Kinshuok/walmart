@@ -170,12 +170,15 @@ async def get_routes(session: AsyncSession = Depends(get_session)):
 @app.get("/routes/{truck_id}")
 async def get_latest_route(truck_id: int, session: AsyncSession = Depends(get_session)):
     result = await session.execute(
-        select(Route).where(Route.truck_id == truck_id).order_by(Route.id.desc())
+        select(Route)
+        .where(Route.truck_id == truck_id)
+        .order_by(Route.id.desc())
+        .options(selectinload(Route.stops))  # 🟢 This is the fix
     )
     route = result.scalars().first()
     if not route:
         raise HTTPException(status_code=404, detail="Route not found")
-    await session.refresh(route)
+
     return {
         'id': route.id,
         'truck_id': route.truck_id,
@@ -189,6 +192,7 @@ async def get_latest_route(truck_id: int, session: AsyncSession = Depends(get_se
             } for s in route.stops
         ]
     }
+
 
 @app.post("/complete-stop/{stop_id}")
 async def complete_stop(stop_id: int, session: AsyncSession = Depends(get_session)):

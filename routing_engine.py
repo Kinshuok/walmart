@@ -62,11 +62,9 @@ async def solve_initial_routes(depot: Depot, trucks: List[Truck], requests: List
     routing.AddDimension(time_cb_idx, 1000, 100000, True, 'Time')
     time_dim = routing.GetDimensionOrDie('Time')
 
-    # Optional: skip setting time window constraints to avoid solver fail
-    # Uncomment when you're confident the windows are valid
-    # for idx, window in enumerate(time_windows):
-    #     index = manager.NodeToIndex(idx)
-    #     time_dim.CumulVar(index).SetRange(window[0], window[1])
+    for idx, window in enumerate(time_windows):
+        index = manager.NodeToIndex(idx)
+        time_dim.CumulVar(index).SetRange(window[0], window[1])
 
     # Search parameters
     params = pywrapcp.DefaultRoutingSearchParameters()
