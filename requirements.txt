@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+ortools
+SQLAlchemy>=1.4
+asyncpg
+geopy
+python-dotenv
+websockets
+httpx
